@@ -973,7 +973,7 @@ corr, x
 # 1. Do students get better test grades if they have a rubber duck on their desk?
 # 
 
-# - 1 sample t-test
+# - 1 sample t-test (1 tail)
 
 # 2. Does smoking affect when or not someone has lung cancer?
 # 
@@ -988,21 +988,21 @@ corr, x
 # 4. A farming company wants to know if a new fertilizer has improved crop yield or not
 # 
 
-# - 2 Sample t-test
+# - independent t-test (1 tail)
 
 # 5 .Does the length of time of the lecture correlate with a students grade?
 # 
 
-# - 2 Sample t-test
+# - Pearson's R
 
 # 6. Do people with dogs live in apartments more than people with cats?
 # 
 
-# - Chi-Square Contingency Test
+# - Chi-Square Contingency Test 
 
 # 7. Use the following contingency table to help answer the question of whether using a macbook and being a codeup student are independent of each other.
 
-# In[70]:
+# In[200]:
 
 
 import pandas as pd
@@ -1012,7 +1012,7 @@ from scipy import stats
 from pydataset import data
 
 
-# In[67]:
+# In[184]:
 
 
 alpha = 0.05
@@ -1028,41 +1028,94 @@ def eval_results(p, alpha, group1, group2):
         print(f'There is not a significant relationship between {group1} and {group2}. (p-value: {p})')
 
 
-# In[62]:
+# In[188]:
 
 
-data = {'Codeup Student': [1, 49], 'Not Codeup Student': [30, 20]}
-students = pd.DataFrame(data)
+students = pd.DataFrame({'Codeup Student': [49, 1], 'Not Codeup Student': [20, 30]})
 students
 
 
-# In[63]:
+# In[191]:
+
+
+students.index = ['Mac User', 'Not Mac User']
+students
+
+
+# In[194]:
+
+
+# Null: Using a macbook and being a CodeUp student are independent of each other
+# Alternate: using a macbook and being a CodeUp studenet are NOT independent of each other
+
+
+# In[197]:
 
 
 chi2, p, degf, expected = stats.chi2_contingency(students)
 
 
-# In[66]:
+# In[198]:
 
 
-print(chi2)
-print(p)
-print(degf)
-print(expected)
+chi2, p
 
 
-# In[68]:
+# In[195]:
 
 
 eval_results(p, alpha, group1='Codeup Student', group2='Not Codeup Student')
 
+if p < alpha:
+    print('Reject the null')
+else:
+    print('Fail to reject the null')
 
-# In[73]:
+
+# In[201]:
 
 
 mpg = data('mpg')
 mpg = pd.DataFrame(mpg)
 mpg.head()
+
+
+# In[202]:
+
+
+mpg['trans'].str.startswith('a')
+
+
+# In[203]:
+
+
+np.where(mpg['trans'].str.startswith('a'), 'Auto', 'Manual')
+
+
+# In[207]:
+
+
+mpg['trans_simple'] = np.where(mpg['trans'].str.startswith('a'), 'Auto', 'Manual')
+mpg.head()
+
+
+# In[208]:
+
+
+mpg['class'].value_counts()
+
+
+# In[210]:
+
+
+pd.crosstab(mpg['class'], mpg['trans_simple'])
+
+
+# In[213]:
+
+
+chi2, p_value, degf, expected = stats.chi2_contingency(pd.crosstab(mpg['class'], mpg['trans_simple']))
+chi2, p_value
 
 
 # In[77]:
@@ -1086,28 +1139,27 @@ p2
 eval_results(p2, alpha, group1='year', group2='cyl')
 
 
-# In[133]:
+# In[225]:
 
 
 import env
 
 db_url = f'mysql+pymysql://{env.username}:{env.password}@{env.hostname}/employees'
 df = pd.read_sql('SELECT * FROM employees AS e ' 
-                 'JOIN dept_emp AS de ON de.emp_no = e.emp_no AND de.to_date > CURDATE() '
-                 'JOIN titles AS t ON t.emp_no = e.emp_no AND t.to_date > CURDATE()', db_url)
+                 'JOIN dept_emp AS de ON de.emp_no = e.emp_no AND de.to_date > CURDATE()', db_url)
 df.head()
 
 
 # ### Is an employee's gender independent of whether an employee works in sales or marketing? (only look at current employees)
 
-# In[134]:
+# In[221]:
 
 
 df = df.drop(columns=['hire_date', 'emp_no', 'birth_date', 'from_date', 'to_date'])
 df.head()
 
 
-# In[135]:
+# In[222]:
 
 
 # d001 - Marketing
@@ -1119,11 +1171,17 @@ table = pd.crosstab(df1['dept_no'], df1['gender'])
 table
 
 
-# In[136]:
+# In[223]:
 
 
 chi2, p3, degf, expected = stats.chi2_contingency(table)
 p3
+
+
+# In[224]:
+
+
+expected
 
 
 # In[137]:
@@ -1134,28 +1192,36 @@ eval_results(p3, alpha, group1='Sales or Marketing', group2='gender')
 
 # ### Is an employee's gender independent of whether or not they are or have been a manager?
 
-# In[139]:
+# In[226]:
+
+
+df = pd.read_sql('SELECT * FROM employees AS e ' 
+                 'JOIN titles AS t USING(emp_no)', db_url)
+df.head()
+
+
+# In[227]:
 
 
 df['is_manager'] = df['title']=='Manager'
 df
 
 
-# In[140]:
+# In[228]:
 
 
 table1 = pd.crosstab(df['is_manager'], df['gender'])
 table1
 
 
-# In[141]:
+# In[229]:
 
 
 chi2, p4, degf, expected = stats.chi2_contingency(table1)
 p4
 
 
-# In[142]:
+# In[230]:
 
 
 eval_results(p3, alpha, group1='is_manager', group2='gender')
